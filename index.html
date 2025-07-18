@@ -40,7 +40,7 @@
           type="tel"
           class="form-control mb-3"
           id="phone"
-          placeholder="연락처"
+          placeholder="연락처 (010xxxxxxxx)"
           required
         />
         <input
@@ -59,7 +59,9 @@
           placeholder="상세 주소"
           required
         />
-        <button type="submit" class="btn btn-primary w-100">제출</button>
+        <button id="submitBtn" type="submit" class="btn btn-primary w-100">
+          제출
+        </button>
         <div
           id="msg"
           class="text-success text-center mt-3"
@@ -95,13 +97,29 @@
         .getElementById("orderForm")
         .addEventListener("submit", function (e) {
           e.preventDefault();
+
+          const name = document.getElementById("name").value.trim();
+          const phone = document.getElementById("phone").value.trim();
+          const roadAddress = document.getElementById("roadAddress").value.trim();
+          const detailAddress = document.getElementById("detailAddress").value.trim();
+
+          // 전화번호 형식 검사 (010 + 숫자 8자리)
+          const phoneRegex = /^010\d{8}$/;
+          if (!phoneRegex.test(phone)) {
+            alert("전화번호를 정확히 입력해주세요. (예: 01012345678)");
+            document.getElementById("phone").focus();
+            return;
+          }
+
+          const submitBtn = document.getElementById("submitBtn");
+          submitBtn.disabled = true;
+          submitBtn.innerText = "제출 중...";
+
           const data = {
-            name: document.getElementById("name").value.trim(),
-            phone: document.getElementById("phone").value.trim(),
-            roadAddress: document.getElementById("roadAddress").value.trim(),
-            detailAddress: document
-              .getElementById("detailAddress")
-              .value.trim(),
+            name,
+            phone,
+            roadAddress,
+            detailAddress,
           };
 
           fetch(
@@ -118,7 +136,11 @@
               document.getElementById("orderForm").reset();
               document.getElementById("roadAddress").value = "";
             })
-            .catch((err) => alert("전송 실패: " + err));
+            .catch((err) => alert("전송 실패: " + err))
+            .finally(() => {
+              submitBtn.disabled = false;
+              submitBtn.innerText = "제출";
+            });
         });
     </script>
   </body>
