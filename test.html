@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>양주 베이비하우스 배송 정보 입력</title>
-  <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+  <!-- 카카오 우편번호: t1.daumcdn.net은 2026-11-30 종료 → t1.kakaocdn.net 사용 -->
+  <script src="https://t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet" />
   <style>
     :root {
@@ -489,7 +490,10 @@
     const postcodeWrap = document.getElementById("postcodeWrap");
 
     function openPostcode() {
-      if (!(window.daum && daum.Postcode)) {
+      // 카카오가 권장하는 kakao.Postcode를 먼저 쓰고, 없으면 기존 daum.Postcode 사용
+      const Postcode =
+        (window.kakao && kakao.Postcode) || (window.daum && daum.Postcode);
+      if (!Postcode) {
         alert("주소 검색을 불러오지 못했습니다.\n잠시 후 다시 눌러주세요.");
         return;
       }
@@ -497,7 +501,7 @@
       postcodeLayer.classList.add("open");
       document.body.style.overflow = "hidden";
 
-      new daum.Postcode({
+      new Postcode({
         oncomplete: function (data) {
           document.getElementById("roadAddress").value =
             data.roadAddress || data.jibunAddress || data.address;
