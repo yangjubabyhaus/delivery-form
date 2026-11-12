@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>양주 베이비하우스 배송 정보 입력</title>
-  <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+  <!-- 카카오 우편번호: t1.daumcdn.net은 2026-11-30 종료 → t1.kakaocdn.net 사용 -->
+  <script src="https://t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet" />
   <style>
     :root {
@@ -299,6 +300,59 @@
       animation: fadeUp 0.7s ease 0.2s both;
     }
 
+    /* [F] 주소 검색 레이어 (팝업 대신 페이지 안에 띄움) */
+    .postcode-layer {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(61, 43, 31, 0.45);
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .postcode-layer.open { display: flex; }
+
+    .postcode-sheet {
+      width: 100%;
+      max-width: 480px;
+      height: 88vh;
+      height: 88dvh;
+      background: var(--white);
+      border-radius: var(--radius) var(--radius) 0 0;
+      overflow: hidden;
+      animation: sheetUp 0.25s ease both;
+    }
+
+    .postcode-header {
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px 0 18px;
+      border-bottom: 1px solid var(--blush);
+    }
+    .postcode-header strong {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--deep);
+    }
+    .postcode-close {
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 50%;
+      background: var(--cream);
+      color: var(--muted);
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    #postcodeWrap {
+      height: calc(100% - 56px);
+      position: relative;
+      -webkit-overflow-scrolling: touch;
+    }
+
     /* Animations */
     @keyframes fadeDown {
       from { opacity: 0; transform: translateY(-16px); }
@@ -306,6 +360,10 @@
     }
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes sheetUp {
+      from { opacity: 0; transform: translateY(40px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
@@ -318,6 +376,8 @@
 
     @media (min-width: 768px) {
       .card { padding: 40px 40px; }
+      .postcode-layer { align-items: center; }
+      .postcode-sheet { height: 600px; border-radius: var(--radius); }
     }
   </style>
 </head>
@@ -381,7 +441,21 @@
 
   </div>
 
+  <!-- [F] 주소 검색 레이어 -->
+  <div class="postcode-layer" id="postcodeLayer">
+    <div class="postcode-sheet">
+      <div class="postcode-header">
+        <strong>주소 검색</strong>
+        <button type="button" class="postcode-close" id="postcodeClose" aria-label="닫기">✕</button>
+      </div>
+      <div id="postcodeWrap"></div>
+    </div>
+  </div>
+
   <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbweoqBjH4NeIj3ZhwZDh0YoUqoBt2AsxC8dmfTsxvcZY-gnwsINNd7UymDNXKuHeTbBcg/exec";
+    const SUCCESS_TEXT = "제출 완료"; // code.gs가 성공 시 돌려주는 글자와 같아야 함
+
     let selectedType = null;
 
     function selectType(type) {
@@ -411,15 +485,49 @@
       }
     }
 
-    document.getElementById("roadAddress").addEventListener("click", function () {
-      if (selectedType === "delivery") {
-        new daum.Postcode({
-          oncomplete: function (data) {
-            document.getElementById("roadAddress").value = data.roadAddress;
-            document.getElementById("detailAddress").focus();
-          },
-        }).open();
+    /* ── [F] 주소 검색: 새 창(팝업) 대신 페이지 안 레이어에 띄움 ── */
+    const postcodeLayer = document.getElementById("postcodeLayer");
+    const postcodeWrap = document.getElementById("postcodeWrap");
+
+    function openPostcode() {
+      // 카카오가 권장하는 kakao.Postcode를 먼저 쓰고, 없으면 기존 daum.Postcode 사용
+      const Postcode =
+        (window.kakao && kakao.Postcode) || (window.daum && daum.Postcode);
+      if (!Postcode) {
+        alert("주소 검색을 불러오지 못했습니다.\n잠시 후 다시 눌러주세요.");
+        return;
       }
+      postcodeWrap.innerHTML = "";
+      postcodeLayer.classList.add("open");
+      document.body.style.overflow = "hidden";
+
+      new Postcode({
+        oncomplete: function (data) {
+          document.getElementById("roadAddress").value =
+            data.roadAddress || data.jibunAddress || data.address;
+          closePostcode();
+          document.getElementById("detailAddress").focus();
+        },
+        width: "100%",
+        height: "100%",
+      }).embed(postcodeWrap);
+    }
+
+    function closePostcode() {
+      postcodeLayer.classList.remove("open");
+      document.body.style.overflow = "";
+    }
+
+    document.getElementById("roadAddress").addEventListener("click", function () {
+      if (selectedType !== "delivery") return;
+      this.blur(); // 아이폰에서 읽기전용 칸에 커서/키보드 바가 뜨는 것 방지
+      openPostcode();
+    });
+
+    document.getElementById("postcodeClose").addEventListener("click", closePostcode);
+
+    postcodeLayer.addEventListener("click", function (e) {
+      if (e.target === postcodeLayer) closePostcode(); // 바깥 어두운 영역 누르면 닫기
     });
 
     function resetForm() {
@@ -432,6 +540,7 @@
       document.getElementById("btnDelivery").className = "toggle-btn";
       document.getElementById("roadAddress").removeAttribute("disabled");
       document.getElementById("detailAddress").removeAttribute("disabled");
+      closePostcode();
       selectedType = null;
     }
 
@@ -443,8 +552,9 @@
       const roadAddress = document.getElementById("roadAddress").value.trim();
       const detailAddress = document.getElementById("detailAddress").value.trim();
 
-      const phoneDigits = phone.replace(/\D/g, '');
-      const phoneValid = /^(010|011|016|017|018|019)\d{8}$/.test(phoneDigits);
+      // [C] 010은 11자리, 011·016·017·018·019는 10자리 또는 11자리 허용
+      const phoneDigits = phone.replace(/\D/g, "");
+      const phoneValid = /^(010\d{8}|01[16789]\d{7,8})$/.test(phoneDigits);
 
       if (!name)        { alert("고객명을 입력해주세요."); return; }
       if (!phone)       { alert("연락처를 입력해주세요."); return; }
@@ -466,16 +576,19 @@
       document.getElementById("msg").style.display = "none";
       document.getElementById("errMsg").style.display = "none";
 
-      fetch(
-        "https://script.google.com/macros/s/AKfycbweoqBjH4NeIj3ZhwZDh0YoUqoBt2AsxC8dmfTsxvcZY-gnwsINNd7UymDNXKuHeTbBcg/exec",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams(data),
-        }
-      )
-        .then((res) => res.text())
-        .then(() => {
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams(data),
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res.text();
+        })
+        .then((text) => {
+          // [A] 서버가 "제출 완료"라고 답했을 때만 성공 처리
+          if (text.trim() !== SUCCESS_TEXT) throw new Error(text);
+
           document.getElementById("msg").style.display = "block";
           resetForm();
           setTimeout(() => {
@@ -484,7 +597,8 @@
             document.getElementById("msg").style.display = "none";
           }, 3000);
         })
-        .catch(() => {
+        .catch((err) => {
+          console.error("제출 실패:", err);
           document.getElementById("errMsg").style.display = "block";
           submitBtn.disabled = false;
           submitBtn.textContent = "제출하기";
@@ -493,4 +607,3 @@
   </script>
 </body>
 </html>
-
