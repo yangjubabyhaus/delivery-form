@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>양주 베이비하우스 배송 정보 입력</title>
+  <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --cream: #fdf8f3;
+      --blush: #f5e6d8;
+      --rose: #e8c4a8;
+      --terracotta: #c97b5a;
+      --deep: #7a4a35;
+      --text: #3d2b1f;
+      --muted: #a08070;
+      --white: #ffffff;
+      --success: #5a9e7a;
+      --danger: #c0604a;
+      --disabled-bg: #ede8e3;
+      --disabled-text: #b0a09a;
+      --shadow: 0 8px 32px rgba(122, 74, 53, 0.10);
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      min-height: 100%;
+      background: var(--cream);
+      font-family: 'Noto Sans KR', sans-serif;
+      color: var(--text);
+    }
+
+    /* Decorative background blobs */
+    body::before, body::after {
+      content: '';
+      position: fixed;
+      border-radius: 50%;
+      z-index: 0;
+      pointer-events: none;
+    }
+    body::before {
+      width: 420px; height: 420px;
+      background: radial-gradient(circle, #f5d9c4 0%, transparent 70%);
+      top: -120px; right: -100px;
+    }
+    body::after {
+      width: 320px; height: 320px;
+      background: radial-gradient(circle, #e8d5c0 0%, transparent 70%);
+      bottom: -80px; left: -80px;
+    }
+
+    .page-wrapper {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 28px;
+      animation: fadeDown 0.6s ease both;
+    }
+
+    .header-badge {
+      display: inline-block;
+      background: var(--blush);
+      border: 1px solid var(--rose);
+      color: var(--terracotta);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 5px 14px;
+      border-radius: 100px;
+      margin-bottom: 12px;
+    }
+
+    .header h1 {
+      font-family: 'Noto Serif KR', serif;
+      font-size: clamp(22px, 5vw, 30px);
+      font-weight: 700;
+      color: var(--deep);
+      line-height: 1.3;
+      letter-spacing: -0.02em;
+    }
+
+    .header h1 span {
+      color: var(--terracotta);
+    }
+
+    .header p {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 300;
+    }
+
+    /* Card */
+    .card {
+      width: 100%;
+      max-width: 480px;
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 32px 28px;
+      animation: fadeUp 0.7s ease 0.1s both;
+    }
+
+    /* Form fields */
+    .field-group {
+      margin-bottom: 16px;
+    }
+
+    .field-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .field-input {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 15px;
+      font-family: 'Noto Sans KR', sans-serif;
+      color: var(--text);
+      background: var(--cream);
+      border: 1.5px solid var(--blush);
+      border-radius: var(--radius-sm);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+      -webkit-appearance: none;
+    }
+
+    .field-input::placeholder { color: var(--muted); font-weight: 300; }
+
+    .field-input:focus {
+      border-color: var(--terracotta);
+      box-shadow: 0 0 0 3px rgba(201, 123, 90, 0.12);
+      background: var(--white);
+    }
+
+    .field-input[disabled] {
+      background: var(--disabled-bg);
+      color: var(--disabled-text);
+      cursor: default;
+      border-color: #e0d8d2;
+    }
+
+    .field-input[readonly]:not([disabled]) {
+      cursor: pointer;
+      background: var(--cream);
+    }
+
+    .field-input[readonly]:not([disabled]):hover {
+      border-color: var(--terracotta);
+    }
+
+    /* Divider */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--blush);
+    }
+    .divider span {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    /* Toggle buttons */
+    .toggle-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .toggle-btn {
+      padding: 14px 10px;
+      font-size: 14px;
+      font-weight: 500;
+      font-family: 'Noto Sans KR', sans-serif;
+      border: 1.5px solid var(--blush);
+      border-radius: var(--radius-sm);
+      background: var(--cream);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      line-height: 1.3;
+    }
+
+    .toggle-btn .icon { font-size: 20px; }
+
+    .toggle-btn:hover {
+      border-color: var(--rose);
+      color: var(--terracotta);
+      background: var(--blush);
+    }
+
+    .toggle-btn.active-pickup {
+      border-color: var(--success);
+      background: #edf7f2;
+      color: var(--success);
+      box-shadow: 0 0 0 3px rgba(90, 158, 122, 0.10);
+    }
+
+    .toggle-btn.active-delivery {
+      border-color: var(--terracotta);
+      background: #fdf0e8;
+      color: var(--terracotta);
+      box-shadow: 0 0 0 3px rgba(201, 123, 90, 0.10);
+    }
+
+    /* Address section */
+    #addressSection {
+      display: none;
+      animation: fadeUp 0.3s ease both;
+    }
+
+    /* Submit button */
+    .submit-btn {
+      width: 100%;
+      padding: 16px;
+      margin-top: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: 'Noto Sans KR', sans-serif;
+      color: var(--white);
+      background: linear-gradient(135deg, var(--terracotta), var(--deep));
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 4px 16px rgba(122, 74, 53, 0.25);
+    }
+
+    .submit-btn:hover:not([disabled]) {
+      opacity: 0.92;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(122, 74, 53, 0.30);
+    }
+
+    .submit-btn:active:not([disabled]) { transform: translateY(0); }
+
+    .submit-btn[disabled] {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Messages */
+    .msg-success, .msg-error {
+      text-align: center;
+      margin-top: 14px;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 500;
+      display: none;
+      animation: fadeUp 0.3s ease both;
+    }
+    .msg-success { background: #edf7f2; color: var(--success); border: 1px solid #b8dfc9; }
+    .msg-error   { background: #fdecea; color: var(--danger);  border: 1px solid #f0bcb4; }
+
+    /* Footer */
+    .footer {
+      margin-top: 20px;
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+      animation: fadeUp 0.7s ease 0.2s both;
+    }
+
+    /* [F] 주소 검색 레이어 (팝업 대신 페이지 안에 띄움) */
+    .postcode-layer {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(61, 43, 31, 0.45);
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .postcode-layer.open { display: flex; }
+
+    .postcode-sheet {
+      width: 100%;
+      max-width: 480px;
+      height: 88vh;
+      height: 88dvh;
+      background: var(--white);
+      border-radius: var(--radius) var(--radius) 0 0;
+      overflow: hidden;
+      animation: sheetUp 0.25s ease both;
+    }
+
+    .postcode-header {
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px 0 18px;
+      border-bottom: 1px solid var(--blush);
+    }
+    .postcode-header strong {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--deep);
+    }
+    .postcode-close {
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 50%;
+      background: var(--cream);
+      color: var(--muted);
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    #postcodeWrap {
+      height: calc(100% - 56px);
+      position: relative;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Animations */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes sheetUp {
+      from { opacity: 0; transform: translateY(40px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Responsive tweaks */
+    @media (max-width: 400px) {
+      .card { padding: 24px 18px; }
+      .toggle-btn { font-size: 13px; padding: 12px 8px; }
+      .toggle-btn .icon { font-size: 18px; }
+    }
+
+    @media (min-width: 768px) {
+      .card { padding: 40px 40px; }
+      .postcode-layer { align-items: center; }
+      .postcode-sheet { height: 600px; border-radius: var(--radius); }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrapper">
+
+    <div class="header">
+      <div class="header-badge">✦ BABY HAUS</div>
+      <h1>양주 베이비하우스<br><span>배송 정보 입력</span></h1>
+      <p>정확한 정보를 입력해 주시면 빠르게 처리해드립니다.</p>
+    </div>
+
+    <div class="card">
+      <form id="orderForm" novalidate>
+
+        <div class="field-group">
+          <label class="field-label" for="name">고객명</label>
+          <input class="field-input" type="text" id="name" placeholder="성함을 입력해주세요" autocomplete="off" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="phone">연락처</label>
+          <input class="field-input" type="tel" id="phone" placeholder="010-0000-0000" autocomplete="off" />
+        </div>
+
+        <div class="divider"><span>수령 방법 선택</span></div>
+
+        <div class="toggle-group">
+          <button type="button" class="toggle-btn" id="btnPickup" onclick="selectType('pickup')">
+            <span class="icon">🏪</span>
+            매장수령
+          </button>
+          <button type="button" class="toggle-btn" id="btnDelivery" onclick="selectType('delivery')">
+            <span class="icon">🚚</span>
+            집으로 배송
+          </button>
+        </div>
+
+        <div id="addressSection">
+          <div class="field-group">
+            <label class="field-label" for="roadAddress">도로명 주소</label>
+            <input class="field-input" type="text" id="roadAddress"
+              placeholder="클릭하여 주소를 검색해주세요" readonly />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="detailAddress">상세 주소</label>
+            <input class="field-input" type="text" id="detailAddress"
+              placeholder="동/호수 등 상세 주소" autocomplete="off" />
+          </div>
+        </div>
+
+        <button type="submit" class="submit-btn" id="submitBtn">제출하기</button>
+
+        <div class="msg-success" id="msg">✅ 제출이 완료되었습니다. 감사합니다!</div>
+        <div class="msg-error" id="errMsg">❌ 전송에 실패했습니다. 다시 시도해주세요.</div>
+
+      </form>
+    </div>
+
+    <div class="footer">양주 베이비하우스 · 고객 정보는 배송 목적으로만 사용됩니다.</div>
+
+  </div>
+
+  <!-- [F] 주소 검색 레이어 -->
+  <div class="postcode-layer" id="postcodeLayer">
+    <div class="postcode-sheet">
+      <div class="postcode-header">
+        <strong>주소 검색</strong>
+        <button type="button" class="postcode-close" id="postcodeClose" aria-label="닫기">✕</button>
+      </div>
+      <div id="postcodeWrap"></div>
+    </div>
+  </div>
+
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbweoqBjH4NeIj3ZhwZDh0YoUqoBt2AsxC8dmfTsxvcZY-gnwsINNd7UymDNXKuHeTbBcg/exec";
+    const SUCCESS_TEXT = "제출 완료"; // code.gs가 성공 시 돌려주는 글자와 같아야 함
+
+    let selectedType = null;
+
+    function selectType(type) {
+      selectedType = type;
+      const section = document.getElementById("addressSection");
+      const roadAddress = document.getElementById("roadAddress");
+      const detailAddress = document.getElementById("detailAddress");
+      const btnPickup = document.getElementById("btnPickup");
+      const btnDelivery = document.getElementById("btnDelivery");
+
+      btnPickup.className = "toggle-btn";
+      btnDelivery.className = "toggle-btn";
+      section.style.display = "block";
+
+      if (type === "pickup") {
+        btnPickup.classList.add("active-pickup");
+        roadAddress.value = "";
+        roadAddress.setAttribute("disabled", true);
+        detailAddress.value = "매장수령";
+        detailAddress.setAttribute("disabled", true);
+      } else {
+        btnDelivery.classList.add("active-delivery");
+        roadAddress.value = "";
+        roadAddress.removeAttribute("disabled");
+        detailAddress.value = "";
+        detailAddress.removeAttribute("disabled");
+      }
+    }
+
+    /* ── [F] 주소 검색: 새 창(팝업) 대신 페이지 안 레이어에 띄움 ── */
+    const postcodeLayer = document.getElementById("postcodeLayer");
+    const postcodeWrap = document.getElementById("postcodeWrap");
+
+    function openPostcode() {
+      if (!(window.daum && daum.Postcode)) {
+        alert("주소 검색을 불러오지 못했습니다.\n잠시 후 다시 눌러주세요.");
+        return;
+      }
+      postcodeWrap.innerHTML = "";
+      postcodeLayer.classList.add("open");
+      document.body.style.overflow = "hidden";
+
+      new daum.Postcode({
+        oncomplete: function (data) {
+          document.getElementById("roadAddress").value =
+            data.roadAddress || data.jibunAddress || data.address;
+          closePostcode();
+          document.getElementById("detailAddress").focus();
+        },
+        width: "100%",
+        height: "100%",
+      }).embed(postcodeWrap);
+    }
+
+    function closePostcode() {
+      postcodeLayer.classList.remove("open");
+      document.body.style.overflow = "";
+    }
+
+    document.getElementById("roadAddress").addEventListener("click", function () {
+      if (selectedType !== "delivery") return;
+      this.blur(); // 아이폰에서 읽기전용 칸에 커서/키보드 바가 뜨는 것 방지
+      openPostcode();
+    });
+
+    document.getElementById("postcodeClose").addEventListener("click", closePostcode);
+
+    postcodeLayer.addEventListener("click", function (e) {
+      if (e.target === postcodeLayer) closePostcode(); // 바깥 어두운 영역 누르면 닫기
+    });
+
+    function resetForm() {
+      document.getElementById("name").value = "";
+      document.getElementById("phone").value = "";
+      document.getElementById("roadAddress").value = "";
+      document.getElementById("detailAddress").value = "";
+      document.getElementById("addressSection").style.display = "none";
+      document.getElementById("btnPickup").className = "toggle-btn";
+      document.getElementById("btnDelivery").className = "toggle-btn";
+      document.getElementById("roadAddress").removeAttribute("disabled");
+      document.getElementById("detailAddress").removeAttribute("disabled");
+      closePostcode();
+      selectedType = null;
+    }
+
+    document.getElementById("orderForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const name = document.getElementById("name").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const roadAddress = document.getElementById("roadAddress").value.trim();
+      const detailAddress = document.getElementById("detailAddress").value.trim();
+
+      // [C] 010은 11자리, 011·016·017·018·019는 10자리 또는 11자리 허용
+      const phoneDigits = phone.replace(/\D/g, "");
+      const phoneValid = /^(010\d{8}|01[16789]\d{7,8})$/.test(phoneDigits);
+
+      if (!name)        { alert("고객명을 입력해주세요."); return; }
+      if (!phone)       { alert("연락처를 입력해주세요."); return; }
+      if (!phoneValid)  { alert("올바른 휴대폰 번호를 입력해주세요.\n예) 010-1234-5678"); return; }
+      if (!selectedType){ alert("수령 방법을 선택해주세요."); return; }
+      if (selectedType === "delivery" && !roadAddress)   { alert("도로명 주소를 검색해주세요."); return; }
+      if (selectedType === "delivery" && !detailAddress) { alert("상세 주소를 입력해주세요."); return; }
+
+      const data = {
+        name,
+        phone,
+        roadAddress: selectedType === "pickup" ? "매장수령" : roadAddress,
+        detailAddress: selectedType === "pickup" ? "" : detailAddress,
+      };
+
+      const submitBtn = document.getElementById("submitBtn");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "제출 중...";
+      document.getElementById("msg").style.display = "none";
+      document.getElementById("errMsg").style.display = "none";
+
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams(data),
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res.text();
+        })
+        .then((text) => {
+          // [A] 서버가 "제출 완료"라고 답했을 때만 성공 처리
+          if (text.trim() !== SUCCESS_TEXT) throw new Error(text);
+
+          document.getElementById("msg").style.display = "block";
+          resetForm();
+          setTimeout(() => {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "제출하기";
+            document.getElementById("msg").style.display = "none";
+          }, 3000);
+        })
+        .catch((err) => {
+          console.error("제출 실패:", err);
+          document.getElementById("errMsg").style.display = "block";
+          submitBtn.disabled = false;
+          submitBtn.textContent = "제출하기";
+        });
+    });
+  </script>
+</body>
+</html>
